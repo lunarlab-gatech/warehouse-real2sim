@@ -1,0 +1,98 @@
+# Mapping values follow config/archive/run_geoscan_gs_nofl2.yaml -- the only configuration
+# that has survived a full sequence in tracker mode. A first attempt with lighter
+# stock-like mapping values (voxel 0.05, gs_iters 50, surface range 0.1) lost track at
+# frame 319/1152: the tracker registers against the map, so map quality IS tracking quality.
+setting:
+  name: "geoscan_gs"
+  output_root: "./pings_experiments"
+  deskew: True                # undistort handheld motion using the tracker's own estimate;
+                              # requires step_frame 1 (deskew is force-disabled if frames are skipped)
+  step_frame: 1
+  kitti_correct: False        # NOT a KITTI sensor (no tilt correction)
+  color_channel: 3
+  color_map_on: True
+process:
+  min_range_m: 0.25           # Mid-360 is reliable well below 0.5 m; keep desk-distance returns
+                              # (pairs with convert_geoscan_bag.py --blind-m 0.25)
+  max_range_m: 36.0           # indoor
+  min_z_m: -10.0              # keep floor/ceiling (no ground clipping indoors)
+  vox_down_m: 0.03            # finer input downsample for an indoor scene
+sampler:
+  surface_sample_range_m: 0.05 # tracker gates scale with this; 0.05 is the value that survived
+  surface_sample_n: 4
+  free_sample_begin_ratio: 0.3
+  free_sample_end_dist_m: 0.3
+  free_front_sample_n: 2
+  free_behind_sample_n: 1
+neuralpoints:
+  voxel_size_m: 0.04          # denser neural map: the tracker registers against this SDF;
+                              # 0.04 is from the only run that survived tracker mode end to end
+  search_alpha: 0.8
+  query_nn_k: 6
+  feature_dim: 32
+  color_feature_dim: 16
+  weighted_first: False
+  prune_map_on: True
+  max_prune_certainty: 2.0
+  prune_freq_frame: 30
+decoder:
+  freeze_after_frame: 30
+  gs_mlp_hidden_dim: 128
+loss:
+  sigma_sigmoid_m: 0.01
+  ekional_loss_on: True
+  weight_e: 0.5
+tracker:                      # presence of this section is what turns the tracker ON
+                              # (the --tracker-on CLI flag alone cannot enable it).
+                              # Values below are the only settings that have survived a full
+                              # GeoScan sequence; raw tracker defaults lose track and abort.
+  photo_loss: True            # camera-aided registration (needs color + gs on)
+  photo_weight: 0.05
+  source_vox_down_m: 0.2
+  iter_n: 100                 # more LM iterations from a worse initial guess
+  min_grad_norm: 0.3          # accept more valid points in sparse indoor scans
+  eigenvalue_check: False     # do not abort on corridor / flat-wall degeneracy
+  uniform_motion_on: True
+pgo:                          # loop closure (only active together with the tracker)
+  map_context: True
+  pgo_freq_frame: 30
+  min_loop_travel_ratio: 2.0
+  local_loop_dist_thre: 0.5   # small room: treat revisits within 0.5 m as loop candidates
+  merge_map: False
+gs:
+  gs_type: gaussian_surfel
+  monodepth_on: False
+  exposure_correction_on: True
+  cam_pose_train_on: False
+  view_concat_on: True
+  learn_color_residual: True
+  gs_iters: 300               # per-frame mapping effort; 50 was not enough for stable tracking
+  gaussian_bs_ratio: 2.0
+  img_pool_size: 16
+  long_term_img_pool_size: 32
+  gs_down_rate: 2
+  gs_vis_down_rate: 1
+  lambda_depth: 0.02
+  lambda_normal_depth: 0.01
+  lambda_mono_normal: 0.01
+  lambda_opacity: 2e-3
+  lambda_area: 2e-3
+  lambda_sky: 0.05
+  consist_shift_count: 0
+  lambda_sdf_cons: 0.05
+  lambda_sdf_normal_cons: 0.05
+  lambda_sdf: 0.5
+continual:
+  batch_size_new_sample: 2000
+  pool_capacity: 1e7
+  pool_filter_freq: 10
+optimizer:
+  batch_size: 8192
+  iters: 20
+  learning_rate_geo: 2e-3
+  learning_rate_color: 2e-3
+  learning_rate_exposure: 1e-3
+eval:
+  mesh_freq_frame: 10
+  mesh_min_nn: 9
+  sensor_cad_path: ./cad/kitti_car.ply   # unused in headless runs

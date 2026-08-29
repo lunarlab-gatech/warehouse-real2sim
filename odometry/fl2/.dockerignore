@@ -1,0 +1,6 @@
+# The base-image build needs no local files (the Dockerfile clones Sophus +
+# rpg_vikit from GitHub), so keep the build context empty -- don't send the whole
+# FAST-LIVO2 C++ source to the docker daemon. FAST-LIVO2 is built at runtime via
+# catkin_make against the bind-mounted repo, not baked into the image.
+*
+!Dockerfile

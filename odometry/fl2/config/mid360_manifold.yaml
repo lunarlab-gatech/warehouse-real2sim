@@ -1,0 +1,93 @@
+# FL2 config for the handheld scanner rig (Livox Mid-360 + 3 fisheyes), LIO-only.
+# Structure mirrors config/mid360.yaml (the GeoScan rig config — the param names our
+# FL2 fork reads); values come from the rig's own shipped FAST-LIVO2 config
+# (extrinsic_intrinsic/mid360.yaml): lidar->IMU extrinsic, IMU
+# covariances, and LIO tuning (voxel 1.0 / max_points 100 suit big warehouses).
+# img_en is 0 here by construction: FL2 is used purely for the LiDAR trajectory.
+common:
+  img_topic: "/middle_camera/image/compressed"
+  lid_topic: "/livox/lidar"
+  imu_topic: "/livox/imu"
+  img_en: 0
+  lidar_en: 1
+  ros_driver_bug_fix: false
+
+extrin_calib:
+  # lidar -> IMU (Manifold factory rig calibration)
+  extrinsic_T: [-0.0137053, -0.0375157, 0.0557647]
+  extrinsic_R: [0.999968, -0.00440039, 0.00667311,
+                0.00437022, 0.99998, 0.00452898,
+                -0.0066929, -0.00449967, 0.999967]
+  # camera <- lidar, middle cam (unused with img_en 0; kept coherent)
+  Rcl: [-0.01950445585, -0.9997950196, -0.005427269265,
+        0.3236252964, -0.001177178114, -0.9461845756,
+        0.945984304, -0.02021121792, 0.3235819042]
+  Pcl: [-0.002140796278, -0.07515981793, -0.02113813907]
+
+time_offset:
+  imu_time_offset: 0.0
+  img_time_offset: 0.0
+  exposure_time_init: 0.0
+
+preprocess:
+  point_filter_num: 1
+  filter_size_surf: 0.1
+  lidar_type: 1 # Livox
+  scan_line: 4
+  blind: 0.5
+
+vio:
+  max_iterations: 5
+  outlier_threshold: 1000
+  img_point_cov: 100
+  patch_size: 8
+  patch_pyrimid_level: 4
+  normal_en: true
+  raycast_en: false
+  inverse_composition_en: false
+  exposure_estimate_en: true
+  inv_expo_cov: 0.1
+
+imu:
+  imu_en: true
+  imu_int_frame: 30
+  acc_cov: 0.6   # factory tune for this rig's IMU
+  gyr_cov: 0.3
+  b_acc_cov: 0.0001
+  b_gyr_cov: 0.0001
+
+lio:
+  max_iterations: 5
+  dept_err: 0.02
+  beam_err: 0.05        # factory tune
+  min_eigen_value: 0.0025
+  voxel_size: 1.0       # big open warehouse scenes
+  max_layer: 2
+  max_points_num: 100
+  layer_init_num: [5, 5, 5, 5, 5]
+
+local_map:
+  map_sliding_en: false
+  half_map_size: 100
+  sliding_thresh: 8
+
+uav:
+  imu_rate_odom: false
+  gravity_align_en: true
+
+publish:
+  dense_map_en: true
+  pub_effect_point_en: false
+  pub_plane_en: false
+  pub_scan_num: 1
+  blind_rgb_points: 0.0
+
+evo:
+  seq_name: "manifold"
+  pose_output_en: false
+
+pcd_save:
+  pcd_save_en: true
+  colmap_output_en: false
+  filter_size_pcd: 0.02
+  interval: 5

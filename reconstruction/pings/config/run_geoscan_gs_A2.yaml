@@ -1,0 +1,88 @@
+# Warehouse experiment A2 — run_oxford_gs.yaml applied to the Manifold Warehouse,
+# built variable-by-variable with the user (2026-07-21). Base: config/run_oxford_gs.yaml
+# VERBATIM (the paper's walking multi-cam recipe, which is itself pose-fixed: its
+# tracker:/pgo: sections are commented out upstream). Every deviation from the Oxford
+# base is marked "# A2:". Unmarked values = Oxford literal, including the ones that
+# differ from our A1 lineage on purpose: voxel 0.2, band 0.25, sigma 0.05, analytical
+# Eikonal 0.2, cam_pose_train_on True, mesh_min_nn 15, derived mc_res 0.12,
+# pools 80/320, batch 16384, no map pruning (prune_map_on default False).
+# Input: data/geoscan_warehouse_fl2 (FL2 poses.txt drives the mapping).
+setting:
+  name: "A2"                  # A2: run identity (tag=warehouse -> warehouse_A2_...)
+  output_root: "./pings_experiments"
+  deskew: False
+  step_frame: 2               # A2: every 2nd scan (A1-proven; Oxford default is 1)
+  color_channel: 3
+  color_map_on: True
+process:
+  min_range_m: 0.25           # A2: Mid-360 blind zone / prep filter (Oxford: 1.0)
+  max_range_m: 50.0           # A2: hall-scale (Oxford: 80)
+  min_z_m: -10.0
+  max_z_m: 20.0               # A2: bound stray upward returns (Oxford: unset -> 60)
+  vox_down_m: 0.06
+  dynamic_sdf_ratio_thre: 0.8
+sampler:
+  surface_sample_range_m: 0.25
+  surface_sample_n: 6
+  free_sample_begin_ratio: 0.5
+  free_sample_end_dist_m: 0.6
+  free_front_sample_n: 3
+  free_behind_sample_n: 1
+neuralpoints:
+  voxel_size_m: 0.2
+  search_alpha: 0.5
+  feature_dim: 32
+  color_feature_dim: 16
+  weighted_first: False
+decoder:
+  freeze_after_frame: 30
+  gs_mlp_level: 1
+  gs_mlp_hidden_dim: 128
+loss:
+  sigma_sigmoid_m: 0.05
+  weight_color: 0.0
+  ekional_loss_on: True
+  numerical_grad: False
+  weight_e: 0.2
+continual:
+  batch_size_new_sample: 1000
+  pool_capacity: 2e7
+  pool_filter_freq: 1
+# no tracker:/pgo: sections (same as the Oxford base) -> pose-fixed on FL2 poses.txt
+gs:
+  gs_type: gaussian_surfel
+  exposure_correction_on: True
+  view_concat_on: True
+  cam_pose_train_on: True
+  n_gaussian: 8
+  gs_iters: 100
+  gaussian_bs_ratio: 1.0
+  img_pool_size: 80
+  long_term_img_pool_size: 320
+  gs_down_rate: 1
+  gs_vis_down_rate: 1
+  gs_keyframe_accu_dist: 2.0
+  lambda_depth: 0.01
+  lambda_normal_depth: 0.01
+  lambda_opacity: 5e-4
+  lambda_area: 1e-2
+  consist_shift_count: 1
+  consist_shift_range_m: 0.1  # A2: 0.5*voxel; unset default stays 0.15 (computed from
+                              # the DEFAULT voxel 0.3, not the loaded one -- known trap)
+  lambda_sdf_cons: 0.05
+  lambda_sdf_normal_cons: 0.05
+  lambda_sdf: 1.0
+  min_valid_nn_k: 3
+  unit_scale_ratio: 0.2
+  max_scale_ratio: 1.0
+  displacement_range_ratio: 1.0
+optimizer:
+  iters: 15
+  batch_size: 16384
+  learning_rate_geo: 2e-3
+  learning_rate_color: 2e-3
+  learning_rate_exposure: 1e-3
+eval:
+  mesh_freq_frame: 10
+  mesh_min_nn: 15
+  mesh_default_on: True

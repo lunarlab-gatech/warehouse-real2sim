@@ -1,0 +1,56 @@
+diff --git a/1vlm_demo.py b/1vlm_demo.py
+index 8931bd1..32ef15e 100644
+--- a/1vlm_demo.py
++++ b/1vlm_demo.py
+@@ -682,7 +682,7 @@ if __name__ == '__main__':
+     model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
+                 modelpath,
+                 torch_dtype=torch.bfloat16,
+-                attn_implementation="flash_attention_2",
++                attn_implementation="sdpa",
+                 device_map="auto",
+             )
+     min_pixels = 65536
+@@ -764,5 +764,6 @@ if __name__ == '__main__':
+ 
+             np.save(os.path.join(save_dir,'allind.npy'),np.concatenate(allcoord))
+             logger.info('success: '+name)
+-        except:
++        except Exception as e:
+             logger.info('error: '+name)
++            import traceback; traceback.print_exc()
+diff --git a/decoder_each.py b/decoder_each.py
+index d8fd1a0..e9248e7 100644
+--- a/decoder_each.py
++++ b/decoder_each.py
+@@ -1,5 +1,5 @@
+ import os
+-# os.environ['ATTN_BACKEND'] = 'xformers'   # Can be 'flash-attn' or 'xformers', default is 'flash-attn'
++os.environ['ATTN_BACKEND'] = 'xformers'   # Can be 'flash-attn' or 'xformers', default is 'flash-attn'
+ os.environ['SPCONV_ALGO'] = 'native'        # Can be 'native' or 'auto', default is 'auto'.
+                                             # 'auto' is faster but will do benchmarking at the beginning.
+                                             # Recommended to set to 'native' if run only once.
+@@ -46,6 +46,14 @@ args = parser.parse_args()
+ pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
+ pipeline.cuda()
+ 
++# Free GPU memory: run_decoder takes VLM voxel coords directly, so the sparse-structure
++# models are never used here, and to_glb only needs mesh+gaussian (not radiance field).
++# Dropping these unused models avoids the flexicubes mesh-extraction OOM on the 24GB card.
++for _k in ['sparse_structure_flow_model', 'sparse_structure_decoder', 'slat_decoder_rf']:
++    if _k in pipeline.models:
++        del pipeline.models[_k]
++gc.collect(); torch.cuda.empty_cache()
++
+ 
+ 
+ 
+@@ -83,7 +91,7 @@ if os.path.exists(os.path.join(qwenpath,'allind.npy')):
+     
+ 
+     
+-    outputs = pipeline.run_decoder(coords,image,seed=1,eachcoords=eachcoords)
++    outputs = pipeline.run_decoder(coords,image,seed=1,eachcoords=eachcoords,formats=['mesh','gaussian'])
+     for i in range(len(outputs)):
+         objfilepath=os.path.join(objspath,str(i))
+         os.makedirs(os.path.join(objfilepath), exist_ok=True)

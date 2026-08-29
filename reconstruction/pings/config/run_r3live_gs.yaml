@@ -1,0 +1,71 @@
+setting:
+  name: "test_r3live_gs"
+  output_root: "./pings_experiments"
+  deskew: True
+  color_channel: 3
+  color_map_on: True
+process:
+  min_range_m: 0.5
+  max_range_m: 50.0
+  min_z_m: -3.0
+  vox_down_m: 0.08
+sampler:
+  surface_sample_range_m: 0.25
+  surface_sample_n: 3
+  free_sample_begin_ratio: 0.3
+  free_front_sample_n: 2 
+neuralpoints:
+  voxel_size_m: 0.2
+  search_alpha: 0.8
+  query_nn_k: 6
+  feature_dim: 32
+  color_feature_dim: 8
+  weighted_first: True
+decoder:
+  freeze_after_frame: 30
+  gs_mlp_hidden_dim: 128
+loss:
+  sigma_sigmoid_m: 0.08
+  weight_color: 0.1
+  loss_weight_on: True
+  dist_weight_scale: 0.8
+  ekional_loss_on: True
+  weight_e: 0.5
+gs:
+  gs_type: gaussian_surfel # select from 3d_gs, gaussian_surfel
+  exposure_correction_on: True
+  learn_color_residual: True
+  cam_pose_train_on: True
+  view_concat_on: True
+  gs_iters: 20
+  gaussian_bs_ratio: 2.0
+  img_pool_size: 20
+  long_term_img_pool_size: 40
+  nothing_new_count_thre: 10
+  gs_down_rate: 1
+  gs_vis_down_rate: 1
+  lambda_depth: 0.02
+  lambda_normal_depth: 0.01
+  lambda_area: 1e-3 
+  lambda_opacity: 2e-3
+  consist_shift_count: 0
+  lambda_sdf_cons: 0.02
+  lambda_sdf_normal_cons: 0.02
+  lambda_sdf: 1.0
+continual:
+  batch_size_new_sample: 3000
+  pool_capacity: 1e7
+tracker:
+  # photo_loss: True
+  source_vox_down_m: 0.4
+  iter_n: 50
+pgo:
+  map_context: True
+  context_cosdist: 0.3
+  min_loop_travel_ratio: 3.0
+optimizer: # mapper
+  iters: 15
+  batch_size: 8192
+eval:
+  mesh_freq_frame: 10 # reconstruct the mesh every x frames
+  mesh_min_nn: 18

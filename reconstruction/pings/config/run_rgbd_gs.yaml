@@ -1,0 +1,79 @@
+setting:
+  name: "test_rgbd_gs"
+  output_root: "./pings_experiments"
+  color_channel: 3
+process:
+  min_z_m: 0.1
+  max_z_m: 3.0
+  min_range_m: 0.05
+  max_range_m: 3.0
+  vox_down_m: 0.005
+sampler:
+  surface_sample_range_m: 0.03
+  surface_sample_n: 3
+  free_sample_begin_ratio: 0.5
+  free_sample_end_dist_m: 0.1
+  free_front_sample_n: 2
+  free_behind_sample_n: 1
+neuralpoints:
+  voxel_size_m: 0.03
+  search_alpha: 0.5
+  feature_dim: 32
+  color_feature_dim: 8
+gs:
+  gs_type: gaussian_surfel # select from 3d_gs, gaussian_surfel
+  exposure_correction_on: True
+  learn_color_residual: True
+  cam_pose_train_on: True
+  view_concat_on: False
+  dist_concat_on: False
+  gs_iters: 50
+  gaussian_bs_ratio: 2.0
+  img_pool_size: 40
+  long_term_img_pool_size: 40
+  gs_down_rate: 0
+  gs_vis_down_rate: 0
+  inverse_depth_loss: False
+  lambda_depth: 0.5
+  lambda_normal_depth: 0.02
+  lambda_area: 0.01
+  lambda_opacity: 1e-3
+  consist_shift_count: 0
+  lambda_sdf_cons: 0.02
+  lambda_sdf_normal_cons: 0.02
+  lambda_sdf: 0.5
+decoder:
+  freeze_after_frame: 30
+  gs_mlp_level: 1
+  gs_mlp_hidden_dim: 128
+loss:
+  sigma_sigmoid_m: 0.02
+  loss_weight_on: False # False
+  dist_weight_scale: 0.6
+  ekional_loss_on: True
+  weight_e: 0.5
+continual: # the data sample pool
+  batch_size_new_sample: 3000
+  pool_capacity: 2e7
+# tracker:
+#   uniform_motion_on: True
+#   # photo_loss: True
+#   # photo_weight: 0.1
+#   source_vox_down_m: 0.02
+#   iter_n: 50
+#   min_grad_norm: 0.5
+#   max_grad_norm: 2.0
+#   GM_grad: 0.4
+#   GM_dist: 0.05
+#   eigenvalue_check: False
+optimizer:
+  iters: 15  # iterations per frame
+  batch_size: 8192
+  learning_rate_geo: 2e-3
+  learning_rate_color: 2e-3
+  learning_rate_exposure: 1e-3
+eval:
+  mesh_freq_frame: 10
+  mesh_min_nn: 19
+  skip_top_voxel: 2
+  vis_frame_len: 0.1

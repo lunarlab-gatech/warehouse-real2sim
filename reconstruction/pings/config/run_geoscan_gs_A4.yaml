@@ -1,0 +1,89 @@
+# Warehouse experiment A4 — the Oxford recipe (A2 base, unchanged mapping/GS
+# values) fed the best poses we can produce. Deviations from A2 are marked "# A4:".
+#   1. poses: loop-closed LIO-SAM trajectory, densified per-scan
+#      (data/geoscan_warehouse_liosam)
+#   2. deskew ON (Oxford's clouds are pre-deskewed; ours must deskew at load.
+#      Requires step_frame 1 — config.py force-disables deskew when skipping — and
+#      the run must NOT pass --no-deskew: the CLI flag overrides the yaml)
+#   3. min_range 1.0 = Oxford literal
+# Companion run warehouse_A4fl2 = IDENTICAL config on data/geoscan_warehouse_fl2,
+# isolating the pose source for the LIO-SAM-vs-FL2 comparison.
+setting:
+  name: "A4"                  # A4: run identity (tag -> warehouse_A4_...)
+  output_root: "./pings_experiments"
+  deskew: True                # A4: undo A2's no-deskew (see header)
+  step_frame: 1               # A4: every scan (deskew requirement; Oxford default)
+  color_channel: 3
+  color_map_on: True
+process:
+  min_range_m: 1.0            # A4: Oxford literal (A2 used 0.25)
+  max_range_m: 50.0           # hall-scale (Oxford: 80)
+  min_z_m: -10.0
+  max_z_m: 20.0               # bound stray upward returns (Oxford: unset -> 60)
+  vox_down_m: 0.06
+  dynamic_sdf_ratio_thre: 0.8
+sampler:
+  surface_sample_range_m: 0.25
+  surface_sample_n: 6
+  free_sample_begin_ratio: 0.5
+  free_sample_end_dist_m: 0.6
+  free_front_sample_n: 3
+  free_behind_sample_n: 1
+neuralpoints:
+  voxel_size_m: 0.2
+  search_alpha: 0.5
+  feature_dim: 32
+  color_feature_dim: 16
+  weighted_first: False
+decoder:
+  freeze_after_frame: 30
+  gs_mlp_level: 1
+  gs_mlp_hidden_dim: 128
+loss:
+  sigma_sigmoid_m: 0.05
+  weight_color: 0.0
+  ekional_loss_on: True
+  numerical_grad: False
+  weight_e: 0.2
+continual:
+  batch_size_new_sample: 1000
+  pool_capacity: 2e7
+  pool_filter_freq: 1
+# no tracker:/pgo: sections (same as the Oxford base) -> pose-fixed on poses.txt
+gs:
+  gs_type: gaussian_surfel
+  exposure_correction_on: True
+  view_concat_on: True
+  cam_pose_train_on: True
+  n_gaussian: 8
+  gs_iters: 100
+  gaussian_bs_ratio: 1.0
+  img_pool_size: 80
+  long_term_img_pool_size: 320
+  gs_down_rate: 1
+  gs_vis_down_rate: 1
+  gs_keyframe_accu_dist: 2.0
+  lambda_depth: 0.01
+  lambda_normal_depth: 0.01
+  lambda_opacity: 5e-4
+  lambda_area: 1e-2
+  consist_shift_count: 1
+  consist_shift_range_m: 0.1  # 0.5*voxel; unset default stays 0.15 (computed from
+                              # the DEFAULT voxel 0.3, not the loaded one -- known trap)
+  lambda_sdf_cons: 0.05
+  lambda_sdf_normal_cons: 0.05
+  lambda_sdf: 1.0
+  min_valid_nn_k: 3
+  unit_scale_ratio: 0.2
+  max_scale_ratio: 1.0
+  displacement_range_ratio: 1.0
+optimizer:
+  iters: 15
+  batch_size: 16384
+  learning_rate_geo: 2e-3
+  learning_rate_color: 2e-3
+  learning_rate_exposure: 1e-3
+eval:
+  mesh_freq_frame: 10
+  mesh_min_nn: 15
+  mesh_default_on: True

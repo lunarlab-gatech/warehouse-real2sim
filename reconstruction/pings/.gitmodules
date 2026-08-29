@@ -1,0 +1,9 @@
+[submodule "submodules/diff-gaussian-surfel-rasterization-w-pose"]
+	path = submodules/diff-gaussian-surfel-rasterization-w-pose
+	url = https://github.com/YuePanEdward/diff-gaussian-surfel-rasterization-w-pose
+[submodule "submodules/diff-gaussian-rasterization-w-pose"]
+	path = submodules/diff-gaussian-rasterization-w-pose
+	url = https://github.com/rmurai0610/diff-gaussian-rasterization-w-pose
+[submodule "submodules/fused-ssim"]
+	path = submodules/fused-ssim
+	url = https://github.com/rahul-goel/fused-ssim

@@ -1,0 +1,24 @@
+services:
+  pings:
+    build:
+      context: .
+      ssh: ["default"]
+    runtime: nvidia
+    shm_size: '128gb'
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
+    image: "pings"
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - /tmp/docker_logs:/var/log
+      - .:/packages/pings
+      # - /your_data_storage_directory_here:/packages/pings/data/
+    environment:
+      - DISPLAY
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [compute,utility,graphics]

@@ -1,0 +1,13 @@
+# from this context, so we can ignore almost everything to keep the build
+# context tiny and fast to send to the daemon.
+data/
+pings_experiments/
+runs_l40s/
+.git/
+submodules/
+cad/
+**/__pycache__/
+**/*.pyc
+**/.DS_Store
+*.bag
+*.tar.gz

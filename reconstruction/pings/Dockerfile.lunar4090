@@ -1,0 +1,59 @@
+# PINGS image for the lunar4090 workstation (RTX 4090, SM 8.9).
+#
+# Mirrors PINGS' official PyTorch 2.5.1 / CUDA 11.8 base, with two changes for
+# this workflow:
+#   (a) clones the repo --recursive from GitHub at build time, so the CUDA
+#       submodules are guaranteed present (the local checkout's submodules/ are
+#       empty), and the build context stays tiny;
+#   (b) pins TORCH_CUDA_ARCH_LIST=8.9 so the compiled kernels target the 4090
+#       (the stock Dockerfile's arch list stops at 8.6).
+#
+# Build:  docker build -f Dockerfile.lunar4090 -t pings:cu118 .
+# Bump:   docker build -f Dockerfile.lunar4090 -t pings:cu118 --build-arg PINGS_REF=main .
+ARG PYTORCH="2.5.1"
+ARG CUDA="11.8"
+ARG CUDNN="9"
+FROM pytorch/pytorch:${PYTORCH}-cuda${CUDA}-cudnn${CUDNN}-devel
+ARG DEBIAN_FRONTEND=noninteractive
+
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,graphics
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        git wget curl ca-certificates \
+        python3-pip python3-dev python3-opencv \
+        libglib2.0-0 libglm-dev \
+        libgl1 libegl1 libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Pin the 4090's SM 8.9 BEFORE the pip install that compiles the CUDA kernels.
+# (nvidia-smi isn't visible during `docker build`, so auto-detection can't work.)
+# SM 8.9 also covers the L40S (Ada) -- same compute capability, so this image is
+# correct on either card.
+ENV TORCH_CUDA_ARCH_LIST="8.9"
+# Cap the CUDA-extension build (ninja) parallelism -- shared-server etiquette,
+# otherwise it spawns one compile job per core (168 on the L40S).
+ENV MAX_JOBS=8
+
+# Clone PINGS --recursive at a pinned commit so submodules/ is populated.
+ARG PINGS_REF=be23324
+RUN git clone --recursive https://github.com/PRBonn/PINGS.git /src \
+    && cd /src \
+    && git checkout ${PINGS_REF} \
+    && git submodule update --init --recursive
+
+# requirements.txt lists the two CUDA extensions as RELATIVE paths
+# (submodules/diff-gaussian-surfel-rasterization-w-pose, submodules/fused-ssim),
+# so install with CWD=/src. This compiles them for sm_89 into site-packages.
+RUN cd /src && pip install --no-cache-dir -r requirements.txt
+
+# Monodepth (metric3d_vit_small via torch.hub): needs timm + the pure-Python
+# mmcv 1.x "lite" (config/utils only -- no CUDA ops in metric3d's inference path,
+# so no compilation). Appended as its own layer so the CUDA-extension build above
+# stays cached on rebuild.
+RUN pip install --no-cache-dir timm "mmcv<2"
+
+# At runtime we bind-mount the synced repo here, so configs/scripts/_run.sh are
+# editable without a rebuild; the compiled extensions live in site-packages.
+WORKDIR /packages/pings
+CMD ["/bin/bash"]

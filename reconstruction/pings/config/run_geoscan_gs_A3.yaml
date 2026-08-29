@@ -1,0 +1,80 @@
+# purpose: see if with basically the same settings, will PINGS perform as well as Oxford?
+setting:
+  name: "A3"
+  output_root: "./pings_experiments"
+  deskew: False
+  step_frame: 4
+  color_channel: 3
+  color_map_on: True
+process:
+  min_range_m: 0.25 # different than oxford, oxford min_range_m: 1.0
+  max_range_m: 50.0 # different than oxford, oxford max_range_m: 80.0
+  min_z_m: -10.0
+  max_z_m: 20.0 # different than oxford, this parameter wasn't set
+  vox_down_m: 0.06
+  dynamic_sdf_ratio_thre: 0.8
+sampler:
+  surface_sample_range_m: 0.25
+  surface_sample_n: 6
+  free_sample_begin_ratio: 0.5
+  free_sample_end_dist_m: 0.6
+  free_front_sample_n: 3
+  free_behind_sample_n: 1
+neuralpoints:
+  voxel_size_m: 0.2
+  search_alpha: 0.5
+  feature_dim: 32
+  color_feature_dim: 16
+  weighted_first: False
+decoder:
+  freeze_after_frame: 30
+  gs_mlp_level: 1
+  gs_mlp_hidden_dim: 128
+loss:
+  sigma_sigmoid_m: 0.05
+  weight_color: 0.0
+  ekional_loss_on: True
+  numerical_grad: False
+  weight_e: 0.2
+continual:
+  batch_size_new_sample: 1000
+  pool_capacity: 2e7
+  pool_filter_freq: 1
+# no tracker:/pgo: sections (same as the Oxford base) -> pose-fixed on FL2 poses.txt
+gs:
+  gs_type: gaussian_surfel
+  exposure_correction_on: True
+  view_concat_on: True
+  cam_pose_train_on: True
+  n_gaussian: 8
+  gs_iters: 100
+  gaussian_bs_ratio: 1.0
+  img_pool_size: 80
+  long_term_img_pool_size: 320
+  gs_down_rate: 1
+  gs_vis_down_rate: 1
+  gs_keyframe_accu_dist: 2.0
+  lambda_depth: 0.01
+  lambda_normal_depth: 0.01
+  lambda_opacity: 5e-4
+  lambda_area: 1e-2
+  consist_shift_count: 1
+  consist_shift_range_m: 0.1  # A2: 0.5*voxel; unset default stays 0.15 (computed from
+                              # the DEFAULT voxel 0.3, not the loaded one -- known trap)
+  lambda_sdf_cons: 0.05
+  lambda_sdf_normal_cons: 0.05
+  lambda_sdf: 1.0
+  min_valid_nn_k: 3
+  unit_scale_ratio: 0.2
+  max_scale_ratio: 1.0
+  displacement_range_ratio: 1.0
+optimizer:
+  iters: 15
+  batch_size: 16384
+  learning_rate_geo: 2e-3
+  learning_rate_color: 2e-3
+  learning_rate_exposure: 1e-3
+eval:
+  mesh_freq_frame: 10
+  mesh_min_nn: 15
+  mesh_default_on: True

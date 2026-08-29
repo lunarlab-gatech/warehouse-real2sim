@@ -1,0 +1,89 @@
+# Warehouse experiment A1 — first paper-derived pose-fixed run.
+# Derived from the PAPER's own scene-scaled configs (run_r3live_gs = Livox
+# handheld, run_oxford_gs = walking multi-cam) rather than the tracker-survival
+# recipe. Key changes vs run_geoscan_gs_posefixed.yaml:
+#   voxel_size_m 0.05 -> 0.10 (less map memory; paper scales voxel to scene)
+#   gs_iters 300 -> 100 (paper walking value; 300 only existed to keep the tracker
+#     alive, and there is no tracker in pose-fixed mode)
+#   mc_res_m pinned to 0.05 so the mesh grid is decoupled from the coarser voxel
+#   max_z_m 20 (bound stray upward returns; default 60)
+#   gs_down_rate 1 (full-res GS training, paper-faithful) -- deliberate choice
+# Launch with PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True. No tracker:/pgo:
+# section => pure mapping along the FL2 poses.txt.
+# Run identity: tag=warehouse + setting.name=A1 => dir warehouse_A1_geoscan_00_<ts>.
+setting:
+  name: "A1"
+  output_root: "./pings_experiments"
+  deskew: False               # posefixed recipe runs --no-deskew
+  step_frame: 2
+  kitti_correct: False
+  color_channel: 3
+  color_map_on: True
+process:
+  min_range_m: 0.25           # Mid-360 blind zone, matches prep --blind-m
+  max_range_m: 50.0           # r3live (Livox handheld) value; covers the hall
+  min_z_m: -10.0
+  max_z_m: 20.0               # bound stray upward returns (default 60)
+  vox_down_m: 0.05            # paper walking-scene range (oxford 0.06 / ipbcar 0.08)
+sampler:
+  surface_sample_range_m: 0.08  # ~= voxel, following the paper's scaling
+  surface_sample_n: 4
+  free_sample_begin_ratio: 0.3
+  free_sample_end_dist_m: 0.3
+  free_front_sample_n: 2
+  free_behind_sample_n: 1
+neuralpoints:
+  voxel_size_m: 0.10
+  search_alpha: 0.8
+  query_nn_k: 6
+  feature_dim: 32
+  color_feature_dim: 16
+  weighted_first: False
+  prune_map_on: True
+  max_prune_certainty: 2.0
+  prune_freq_frame: 30
+decoder:
+  freeze_after_frame: 30
+  gs_mlp_hidden_dim: 128
+loss:
+  sigma_sigmoid_m: 0.01
+  ekional_loss_on: True
+  weight_e: 0.5
+gs:
+  gs_type: gaussian_surfel
+  monodepth_on: False         # proven spike source on this rig -- keep off
+  exposure_correction_on: True
+  cam_pose_train_on: False
+  view_concat_on: True
+  learn_color_residual: True
+  gs_iters: 100               # paper walking value; 300 only existed for the tracker
+  gaussian_bs_ratio: 2.0
+  img_pool_size: 40           # between r3live 20 and oxford 80
+  long_term_img_pool_size: 120
+  gs_down_rate: 1             # full-res GS training, paper-faithful
+  gs_vis_down_rate: 1
+  lambda_depth: 0.02
+  lambda_normal_depth: 0.01
+  lambda_mono_normal: 0.01
+  lambda_opacity: 2e-3
+  lambda_area: 2e-3
+  lambda_sky: 0.05
+  consist_shift_count: 0
+  lambda_sdf_cons: 0.05
+  lambda_sdf_normal_cons: 0.05
+  lambda_sdf: 0.5
+continual:
+  batch_size_new_sample: 2000
+  pool_capacity: 1e7
+  pool_filter_freq: 10
+optimizer:
+  batch_size: 8192
+  iters: 15                   # paper value (per-frame it's warmup-only in GS mode)
+  learning_rate_geo: 2e-3
+  learning_rate_color: 2e-3
+  learning_rate_exposure: 1e-3
+eval:
+  mesh_freq_frame: 10
+  mesh_min_nn: 9
+  mc_res_m: 0.05              # decoupled from voxel: 5 cm marching-cubes grid
+  sensor_cad_path: ./cad/kitti_car.ply

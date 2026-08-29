@@ -1,0 +1,82 @@
+setting:
+  name: "test_ipbcar_gs"
+  output_root: "./pings_experiments"
+  deskew: True
+  deskew_ref_ratio: 0.33
+  color_channel: 3
+  color_map_on: True
+process:
+  min_range_m: 1.5
+  max_range_m: 60.0
+  vox_down_m: 0.08
+  dynamic_sdf_ratio_thre: 0.5
+sampler:
+  surface_sample_range_m: 0.3
+  surface_sample_n: 4
+  free_sample_begin_ratio: 0.3
+  free_front_sample_n: 4
+neuralpoints:
+  voxel_size_m: 0.25 # 0.2 # 0.3
+  search_alpha: 0.8
+  query_nn_k: 8
+  feature_dim: 32
+  color_feature_dim: 16
+  weighted_first: False
+decoder:
+  freeze_after_frame: 30
+  gs_mlp_hidden_dim: 128
+loss:
+  sigma_sigmoid_m: 0.05
+  weight_color: 0.2
+  ekional_loss_on: True
+  weight_e: 0.1
+continual:
+  batch_size_new_sample: 1000
+  pool_capacity: 1e7
+# when test a mapping mode, run with --tracker-off
+tracker:
+  source_vox_down_m: 0.6
+  iter_n: 100
+pgo:
+  map_context: True
+  pgo_freq_frame: 30
+  virtual_side_count: 6
+gs:
+  gs_type: gaussian_surfel # select from 3d_gs and gaussian_surfel
+  exposure_correction_on: True
+  affine_exposure_correction: True 
+  cam_pose_train_on: False
+  eval_cam_refine_on: False
+  view_concat_on: True
+  dist_concat_on: False
+  learn_color_residual: False
+  n_gaussian: 8
+  gs_iters: 100
+  gaussian_bs_ratio: 2.0
+  img_pool_size: 60
+  long_term_img_pool_size: 120
+  short_term_train_prob: 0.6
+  gs_down_rate: 1
+  gs_vis_down_rate: 1
+  gs_keyframe_accu_dist: 1.0 # unit: m
+  lambda_depth: 0.01
+  lambda_opacity: 1e-3 # 5e-4 # increase to have more valid Gaussians
+  lambda_area: 1e-2 # 2e-4
+  lambda_normal_depth: 0.01
+  consist_shift_count: 0
+  lambda_sdf_cons: 0.01
+  lambda_sdf_normal_cons: 0.01
+  lambda_sdf: 0.5
+  unit_scale_ratio: 0.2
+  max_scale_ratio: 1.0
+  displacement_range_ratio: 2.0
+optimizer:
+  iters: 15 # sdf mapping iterations per frame
+  batch_size: 8192
+  learning_rate_geo: 2e-3
+  learning_rate_color: 2e-3
+  learning_rate_exposure: 1e-3
+eval:
+  sensor_cad_path: ./cad/ipb_car.ply
+  mesh_freq_frame: 10 # reconstruct the mesh every x frames
+  mesh_min_nn: 19

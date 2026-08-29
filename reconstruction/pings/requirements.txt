@@ -1,0 +1,32 @@
+numpy==1.26.4
+evo==1.28.0
+gnupg==2.3.1 
+gtsam==4.2
+natsort==8.1.0
+open3d==0.19.0
+pycryptodomex==3.20.0
+pyquaternion==0.9.9
+rich==12.5.1
+roma==1.5.0
+rospkg==1.5.1
+scikit-image==0.25.2
+dtyper==2.5.1
+wandb==0.19.0
+opencv-python
+# for gs
+torchmetrics==1.4.1
+ninja
+submodules/diff-gaussian-surfel-rasterization-w-pose
+submodules/fused-ssim
+# for gs visualizer
+PyOpenGL
+glfw
+PyGLM==2.7.0
+imageio[ffmpeg]
+# # optional for baseline method using 3dgs
+# submodules/diff-gaussian-rasterization-w-pose
+# # optional for metric3d mono depth estimation
+# mmcv
+# timm
+# # optional for tsdf fusion baseline
+# vdbfusion 
